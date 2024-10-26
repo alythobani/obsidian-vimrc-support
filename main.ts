@@ -116,6 +116,9 @@ export default class VimrcPlugin extends Plugin {
 			this.registerYankEvents(w);
 		})
 
+		this.prepareChordDisplay();
+		this.prepareVimModeDisplay();
+
 		// Two events cos
 		// this don't trigger on loading/reloading obsidian with note opened
 		this.app.workspace.on("active-leaf-change", async () => {
@@ -279,9 +282,6 @@ export default class VimrcPlugin extends Plugin {
 				this.defineSource(this.codeMirrorVimObject);
 
 				this.loadVimCommands(vimCommands);
-
-				this.prepareChordDisplay();
-				this.prepareVimModeDisplay();
 
 				// Make sure that we load it just once per CodeMirror instance.
 				// This is supposed to work because the Vim state is kept at the keymap level, hopefully
@@ -463,7 +463,7 @@ export default class VimrcPlugin extends Plugin {
 		// Function to surround selected text or highlighted word.
 		var surroundFunc = (params: string[]) => {
 			var editor = this.getActiveView().editor;
-			if (!params.length) {
+			if (!params?.length) {
 				throw new Error("surround requires exactly 2 parameters: prefix and postfix text.");
 			}
 			let newArgs = params.join(" ").match(/(\\.|[^\s\\\\]+)+/g);
@@ -494,12 +494,10 @@ export default class VimrcPlugin extends Plugin {
 					chosenSelection = {anchor: wordAt.from, head: wordAt.to};
 				}
 			}
-            let currText;
-            if (editor.posToOffset(chosenSelection.anchor) > editor.posToOffset(chosenSelection.head)) {
-                currText = editor.getRange(chosenSelection.head, chosenSelection.anchor);
-            } else {
-                currText = editor.getRange(chosenSelection.anchor, chosenSelection.head);
-            }
+			if (editor.posToOffset(chosenSelection.anchor) > editor.posToOffset(chosenSelection.head)) {
+				[chosenSelection.anchor, chosenSelection.head] = [chosenSelection.head, chosenSelection.anchor];
+			}
+			let currText = editor.getRange(chosenSelection.anchor, chosenSelection.head);
 			editor.replaceRange(beginning + currText + ending, chosenSelection.anchor, chosenSelection.head);
 			// If no selection, place cursor between beginning and ending
 			if (editor.posToOffset(chosenSelection.anchor) === editor.posToOffset(chosenSelection.head)) {
